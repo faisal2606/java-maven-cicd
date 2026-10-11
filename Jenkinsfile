@@ -1,54 +1,51 @@
-
 pipeline {
     agent any
+
+    environment {
+        MAVEN_HOME = 'C:\\tools\\apache-maven-3.10.0'
+        DOCKER_IMAGE = 'hello-maven:1.0'
+    }
 
     stages {
         stage('1. Verify Tools') {
             steps {
                 bat 'java -version'
-                bat 'mvn -version'
+                bat '"%MAVEN_HOME%\\bin\\mvn.cmd" -version'
                 bat 'docker version'
             }
         }
 
-        stage('2. Checkout Source') {
+        stage('2. Maven Test') {
             steps {
-                echo 'Source code is checked out by Jenkins'
-                bat 'git --version'
+                bat '"%MAVEN_HOME%\\bin\\mvn.cmd" clean test'
             }
         }
 
-        stage('3. Maven Test') {
+        stage('3. Maven Package') {
             steps {
-                bat 'mvn clean test'
+                bat '"%MAVEN_HOME%\\bin\\mvn.cmd" package'
             }
         }
 
-        stage('4. Maven Package') {
+        stage('4. Build Docker Image') {
             steps {
-                bat 'mvn package'
+                bat 'docker build -t %DOCKER_IMAGE% .'
             }
         }
 
-        stage('5. Build Docker Image') {
+        stage('5. Run Docker Container') {
             steps {
-                bat 'docker build -t hello-maven:1.0 .'
-            }
-        }
-
-        stage('6. Run Docker Container') {
-            steps {
-                bat 'docker run --rm hello-maven:1.0'
+                bat 'docker run --rm %DOCKER_IMAGE%'
             }
         }
     }
 
     post {
         success {
-            echo 'SUCCESS: Java Maven Docker pipeline completed!'
+            echo 'SUCCESS: Maven build, tests, and Docker pipeline completed!'
         }
         failure {
-            echo 'FAILED: Check the Jenkins Console Output.'
+            echo 'FAILED: Check the stage that failed in Console Output.'
         }
     }
 }
